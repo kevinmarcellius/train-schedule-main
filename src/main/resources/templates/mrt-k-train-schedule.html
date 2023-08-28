@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" xmlns:th="http://www.thymeleaf.org">
+    <title>MRT-K | Train Schedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="mrt-k-train-schedule.css" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/2.2.19@/lib/index.js"></script>
+  <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+</head>
+  <body>
+    <header>
+      <div class="logo">MRT-K App</div>
+      <div class="user-details">
+        <div th:text="${username}" class="username"></div>
+        <div th:text="'¥ ' + ${balance}" class="balance"></div>
+        <a th:href="${root}"><button id="logout-btn">Logout</button></a>
+      </div>
+    </header>
+    <main>
+      <h1>Train Schedule</h1>
+      <a id="home-button-wrapper" th:href="${homepage}"><button class="home-button">Homepage</button></a>
+
+        <table>
+          <tr>
+            <td colspan="2">
+              <select class="block appearance-none w-full bg-gray-100 border-2 border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+                      name="station"
+                      id="station">
+                <option value="">Select Train Station</option>
+                <option th:each="station : ${trainStation}"
+                        th:value="${station}"
+                        th:text="${station}">
+                </option>
+              </select>
+            </td>
+            </tr>
+          <tr>
+            <td>
+              Start Time
+            </td>
+            <td>
+                End Time
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input
+                      type="time"
+                      id="startTime"
+                      name="startTime"
+                      class="appearance-none bg-white border border-gray-300 px-4 py-2 rounded shadow-sm text-sm leading-tight focus:outline-none focus:shadow-outline block mx-auto"
+              />
+            </td>
+
+            <td>
+                <input
+                        type="time"
+                        id="endTime"
+                        name="endTime"
+                        class="appearance-none bg-white border border-gray-300 px-4 py-2 rounded shadow-sm text-sm leading-tight focus:outline-none focus:shadow-outline block mx-auto"
+                />
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="flex justify-center items-center">
+              <button class="home-button" id="fetchButton">Search</button>
+              </div>
+            </td>
+          </tr>
+        </table>
+<br>
+
+      <table id="scheduleTable">
+        <thead>
+        <tr>
+          <th id="th-start"><strong>Line</strong></th>
+          <th><strong>Station</strong></th>
+          <th><strong>Train Type</strong></th>
+          <th id="th-end"><strong>Available Time</strong></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="trainTrip : ${trainSchedule}">
+          <td th:text="${trainTrip.getLine()}"></td>
+          <td th:text="${trainTrip.getStation()}"></td>
+          <td th:text="${trainTrip.getTrainType()}"></td>
+          <td>
+            <ul>
+              <li th:each="instant : ${trainTrip.getInstants()}">
+                <p th:text="${instant.getId()}"></p>
+              </li>
+            </ul>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <!-- Missing Station Modal -->
+      <div id="missingStationModal" class="modal fixed top-0 left-0 w-full h-full flex justify-center items-center invisible">
+        <div class="bg-white w-1/2 p-6 rounded shadow-lg">
+          <h2 class="text-lg font-semibold mb-2">Missing Station</h2>
+          <p>Please select a station.</p>
+          <button id="closeMissingStationModal" class="mt-4 px-4 py-2 bg-gray-300 rounded">Close</button>
+        </div>
+      </div>
+
+      <!-- Invalid Time Modal -->
+      <div id="invalidTimeModal" class="modal fixed top-0 left-0 w-full h-full flex justify-center items-center invisible">
+        <div class="bg-white w-1/2 p-6 rounded shadow-lg">
+          <h2 class="text-lg font-semibold mb-2">Invalid Time Range</h2>
+          <p>Start time must be before end time.</p>
+          <button id="closeInvalidTimeModal" class="mt-4 px-4 py-2 bg-gray-300 rounded">Close</button>
+        </div>
+      </div>
+
+    </main>
+    <footer>
+      <p>&copy; 2023 TrainApp Inc. All rights reserved.</p>
+    </footer>
+  </body>
+</html>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    flatpickr("#startTime", {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      // format 24 hour
+      time_24hr: true,
+    });
+
+    flatpickr("#endTime", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+      time_24hr: true,
+    });
+  });
+
+    document.getElementById("fetchButton").addEventListener("click", () => {
+      const stationSelect = document.getElementById("station");
+      const selectedStation = stationSelect.options[stationSelect.selectedIndex].value;
+
+      const startTimeInput = document.getElementById("startTime");
+      const endTimeInput = document.getElementById("endTime");
+
+      const stationName = encodeURIComponent(selectedStation);
+      const startTime = encodeURIComponent(startTimeInput.value);
+      const endTime = encodeURIComponent(endTimeInput.value);
+      if (selectedStation === "") {
+        document.getElementById("missingStationModal").classList.remove("invisible");
+        return;
+      }
+
+      if (startTime >= endTime && startTime !== "" && endTime !== "") {
+        document.getElementById("invalidTimeModal").classList.remove("invisible");
+        return;
+      }
+
+      const url = `http://localhost:8084/train-schedule/get-train-trips-by-station?station=${stationName}&startTime=${startTime}&endTime=${endTime}`;
+      const table = document.getElementById("scheduleTable");
+      const tbody = table.querySelector("tbody");
+      fetch(url)
+              .then(response => response.json())
+              .then(data => {
+                // Assuming data is an array of train schedules
+                // for each data
+                // print on console
+                tbody.innerHTML = "";
+                console.log(data);
+                const filteredTrainTrips = data.filter(trip => trip.instants.length > 0);
+                console.log(filteredTrainTrips.length);
+
+                if (filteredTrainTrips.length === 0) {
+                  const row = tbody.insertRow();
+                  const cell = row.insertCell();
+                  cell.colSpan = 4;
+                  cell.textContent = "Unfortunately, there are no train schedules available for the selected station and time range. Please adjust your search criteria and try again";
+                  return;
+                }
+
+                filteredTrainTrips.forEach(trip => {
+                  const row = tbody.insertRow();
+
+                  const lineCell = row.insertCell();
+                  lineCell.textContent = trip.line;
+
+                  const stationCell = row.insertCell();
+                  stationCell.textContent = trip.station;
+
+                  const typeCell = row.insertCell();
+                  typeCell.textContent = trip.trainType;
+
+                  const departureCell = row.insertCell();
+                  trip.instants.forEach(time => {
+                    const timeElement = document.createElement('div');
+                    timeElement.textContent = time.id;
+                    departureCell.appendChild(timeElement);
+                  });
+                });
+
+              })
+              .catch(error => {
+                console.error('Error fetching data:', error);
+              });
+    });
+    document.getElementById("closeMissingStationModal").addEventListener("click", () => {
+      document.getElementById("missingStationModal").classList.add("invisible");
+    });
+
+    document.getElementById("closeInvalidTimeModal").addEventListener("click", () => {
+      document.getElementById("invalidTimeModal").classList.add("invisible");
+    });
+</script>
