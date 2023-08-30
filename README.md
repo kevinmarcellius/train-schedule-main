@@ -28,8 +28,8 @@ Tech Stack:
 - BE: Spring Boot
 - FE: Thymeleaf
 
-Service : train-schedule
-Purpose:
+Service : train-schedule <br>
+Purpose: <br>
 Microservice ini bertugas untuk menampilkan jadwal kereta pada rentang waktu tertentu di suatu stasiun. Jadwal tersebut memiliki atribut line (String), station (String), trainType (String), time(String). Design pattern yang akan digunakan di microservice ini adalah facade pattern.
 Technologies used:
 - Programming Language : Java
